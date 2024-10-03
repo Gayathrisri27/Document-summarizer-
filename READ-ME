@@ -1,0 +1,88 @@
+DESCRIPTION:
+
+This Python code provides a function summarize_document to summarize a given document using the facebook/bart-large-cnn model from the transformers library. It handles the summarization of long documents by splitting them into chunks and summarizing each chunk individually before combining the results into a final summary. Below is an elaboration of how each part of the code works:
+
+1. Imports and Model Setup
+python
+Copy code
+import nltk
+from transformers import pipeline
+nltk: Used for natural language processing, specifically to split the input text into sentences using the punkt tokenizer.
+transformers: The pipeline from the Hugging Face Transformers library is used to access the pre-trained BART (Bidirectional and Auto-Regressive Transformers) model for summarization.
+2. Summarize Function Definition
+python
+Copy code
+def summarize_document(text, max_length=150):
+The function summarize_document accepts two parameters:
+text: The document to summarize.
+max_length: The maximum length of each chunk's summary. The default value is set to 150.
+3. Downloading Required NLTK Data
+python
+Copy code
+nltk.download('punkt', quiet=True)
+The NLTK punkt tokenizer is downloaded (if not already available), which will be used for splitting the input text into sentences.
+4. Initializing the Summarization Model
+python
+Copy code
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+A summarization pipeline is created using the BART model (facebook/bart-large-cnn). This model is fine-tuned for summarization tasks, making it ideal for condensing large amounts of text into a summary.
+5. Splitting Text into Sentences
+python
+Copy code
+sentences = nltk.sent_tokenize(text)
+The input text is split into individual sentences using the NLTK sent_tokenize function, which helps in breaking the text into smaller chunks.
+6. Chunking the Document
+python
+Copy code
+chunks = []
+current_chunk = ""
+for sentence in sentences:
+    if len(current_chunk) + len(sentence) < 1000:
+        current_chunk += " " + sentence
+    else:
+        chunks.append(current_chunk.strip())
+        current_chunk = sentence
+if current_chunk:
+    chunks.append(current_chunk.strip())
+The document is split into chunks, where each chunk contains up to 1000 characters. This is necessary because the BART model has a limit on the input length it can process. Sentences are grouped together until they approach this limit, after which they are added as a chunk.
+7. Summarizing Each Chunk
+python
+Copy code
+summaries = []
+for chunk in chunks:
+    summary = summarizer(chunk, max_length=max_length, min_length=30, do_sample=False)
+    summaries.append(summary[0]['summary_text'])
+Each chunk is passed through the summarizer pipeline, which generates a summary for that chunk.
+max_length: Controls the maximum number of tokens in the summary.
+min_length: Ensures a minimum length of 30 tokens for each summary.
+do_sample=False: Disables randomness, ensuring that the model provides deterministic output.
+The generated summary is extracted and added to the summaries list.
+8. Combining the Summaries
+python
+Copy code
+final_summary = " ".join(summaries)
+The individual summaries from all chunks are combined into a single final_summary string.
+9. Returning the Final Summary
+python
+Copy code
+return final_summary
+The function returns the final summary.
+10. Example Usage
+python
+Copy code
+document = """
+Accenture is a global professional services company specializing in digital, cloud, and security solutions. Founded in 1989, it is headquartered in Dublin, Ireland, and operates in over 120 countries. Accenture provides services across five key areas: strategy, consulting, digital, technology, and operations, helping businesses improve efficiency, drive innovation, and embrace new technologies. With a strong focus on digital transformation, the company partners with organizations worldwide to help them adapt to evolving market demands.
+
+Accenture's expertise in industries such as healthcare, finance, communications, and more makes it a leader in business consulting. Sustainability and inclusion are core values, as the company is committed to reducing its environmental footprint and promoting diversity. Accenture’s innovative approach to problem-solving, combined with a global talent pool, enables it to deliver cutting-edge solutions for clients, making it one of the world’s top consulting and technology firms.
+"""
+An example document about Accenture is provided, which is used for testing the summarization.
+11. Summary Generation and Output
+python
+Copy code
+summary = summarize_document(document)
+print("Original text length:", len(document))
+print("Summary length:", len(summary))
+print("\nSummary:")
+print(summary)
+The summarize_document function is called with the example document.
+The original and summary text lengths are printed, followed by the summary itself.
